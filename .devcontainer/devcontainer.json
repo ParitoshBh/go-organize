@@ -1,0 +1,24 @@
+{
+	"name": "Go Organizer",
+
+	// Sets the run context to one level up instead of the .devcontainer folder.
+	"context": "..",
+
+	// Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+	"dockerFile": "Dockerfile.dev",
+
+	// Set *default* container specific settings.json values on container create.
+	"settings": { 
+		"terminal.integrated.shell.linux": "/bin/bash",
+		"go.toolsManagement.checkForUpdates": "off",
+		"go.gopath": "/go",
+		"go.useLanguageServer": true
+	},
+
+	// Add the IDs of extensions you want installed when the container is created.
+	"extensions": [
+		"golang.Go"
+	],
+
+	"postCreateCommand": "go mod download"
+}

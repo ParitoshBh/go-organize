@@ -1,0 +1,61 @@
+{{ define "base" }}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+    <title>Go Organize</title>
+
+    <meta name="msapplication-TileColor" content="#206bc4" />
+    <meta name="theme-color" content="#206bc4" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="HandheldFriendly" content="True" />
+    <meta name="MobileOptimized" content="320" />
+    <meta name="description" content="Go Organizer" />
+
+    <link rel="icon" href="/assets/images/favicon.ico" type="image/x-icon" />
+    <link rel="shortcut icon" href="/assets/images/favicon.ico" type="image/x-icon" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <!-- CSS files -->
+    <link href="/assets/css/tabler.min.css" rel="stylesheet" />
+    <!-- Uppy CSS -->
+    <link href="/assets/css/uppy-v1.25.2.min.css" rel="stylesheet" />
+</head>
+
+<body class="antialiased">
+    <div class="page">
+
+        <!-- Header -->
+        {{template "_header" .}}
+
+        <div class="content">
+            <div class="container-xl">
+                {{template "_breadcrumb" .}}
+
+                {{template "content" .}}
+            </div>
+        </div>
+
+        <!-- Footer -->
+        {{template "_footer"}}
+
+        <!-- Modals -->
+        {{ template "modals" . }}
+    </div>
+
+    <!-- Tabler core -->
+    <script src="/assets/js/tabler.min.js"></script>
+    <!-- Uppy file uploader -->
+    <script src="/assets/js/uppy-v1.25.2.min.js"></script>
+    <!-- Application code -->
+    <script src="/assets/js/app.js"></script>
+</body>
+
+</html>
+{{ end }}

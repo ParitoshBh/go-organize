@@ -1,0 +1,179 @@
+{{ define "content" }}
+
+{{ if .IsObjectListEmpty }}
+<div class="empty">
+    <div class="empty-img"><img src="/assets/images/empty_list.svg" alt="" height="128">
+    </div>
+    <p class="empty-title">Nothing to show here!</p>
+    <p class="empty-subtitle text-muted">
+        Start by adding a file or creating a folder.
+    </p>
+    <div class="empty-action">
+        <a class="btn btn-primary" href="#" data-bs-toggle="modal" data-bs-target="#modal-team">
+            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
+                stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Create file/folder
+        </a>
+    </div>
+</div>
+{{ else }}
+
+<!-- <div class="row row-cards">
+    {{ range $object := .Objects }}
+        {{ if $object.IsDirectory }}
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                <div class="card-body text-center">
+                    <span class="avatar avatar-xl mb-3 avatar-rounded">JL</span>                    
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <div>{{ $object.Name }}</div>
+                            <div class="text-muted">{{ $object.Size }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{ else }}
+        <div class="col-sm-6 col-lg-4">
+            <div class="card card-sm">
+                {{ if $object.IsImage }}
+                <a href="#" class="d-block"><img src="{{ $object.Path }}" class="card-img-top"></a>
+                {{ end }}
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div>
+                            <div>{{ $object.Name }}</div>
+                            <div class="text-muted">{{ $object.Size }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>        
+        {{ end }}
+    {{ end }}
+</div>
+
+<hr> -->
+
+<div class="card">
+    <div class="list-group list-group-flush">
+        {{ range $object := .Objects }}
+        <div class="list-group-item">
+            <div class="row align-items-center">
+                <!-- <div class="col-auto"><input type="checkbox" class="form-check-input"></div> -->
+                <div class="col-auto">
+                    <a href="#">
+                        <span class="avatar">
+                            {{ if $object.IsDirectory }}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path
+                                    d="M5 4h4l3 3h7a2 2 0 0 1 2 2v8a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-11a2 2 0 0 1 2 -2" />
+                            </svg>
+                            {{ else }}
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                                <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+                            </svg>
+                            {{ end }}
+                        </span>
+                    </a>
+                </div>
+                <div class="col text-truncate">
+                    <a href="{{ $object.Path }}" class="text-body d-block">{{ $object.Name }}</a>
+                    <small class="d-block text-muted text-truncate mt-n1">{{ $object.Size }}</small>
+                </div>
+                <div class="col-auto lh-1">
+                    <div class="dropdown">
+                        <a href="#" class="link-secondary" data-bs-toggle="dropdown" aria-expanded="false"><svg
+                                xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <circle cx="5" cy="12" r="1"></circle>
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="19" cy="12" r="1"></circle>
+                            </svg>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end" style="margin: 0px;">
+                            <form action="/object/delete" method="post">
+                                <input type="text" name="bucketPath" value="{{ $.CurrentPath }}" hidden>
+                                <input type="text" name="objectName" value="{{ $object.Name }}" hidden>
+                                <input type="text" name="isDirectory" value="{{ $object.IsDirectory }}" hidden>
+                                <input type="submit" class="dropdown-item" value="Delete" />
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {{ end }}
+    </div>
+</div>
+{{ end }}
+{{ end }}
+
+{{ define "modals" }}
+<div class="modal modal-blur fade" id="modal-team" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <form action="/object/create" method="post" onsubmit="return submitModal(this)">
+                <ul class="nav nav-tabs" data-bs-toggle="tabs">
+                    <li class="nav-item">
+                        <a href="#tabs-home-ex2" class="nav-link active" data-bs-toggle="tab" data-type="file">
+                            File(s)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#tabs-profile-ex2" class="nav-link" data-bs-toggle="tab" data-type="folder">
+                            Folder
+                        </a>
+                    </li>
+                    <li class="nav-item ms-auto">
+                        <a href="#" class="nav-link" title="Close" data-bs-dismiss="modal">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </a>
+                    </li>
+                </ul>
+                <div class="card-body">
+                    <div class="tab-content">
+                        <div class="tab-pane active show" id="tabs-home-ex2">
+                            <div class="uppy-dashboard-container"></div>
+                        </div>
+                        <div class="tab-pane" id="tabs-profile-ex2">
+                            <div class="row mb-3 align-items-end">
+                                <div class="col">
+                                    <input type="text" class="form-control" name="bucket" />
+                                    <input type="text" id="bucketPath" name="bucketPath" value="{{ .CurrentPath }}"
+                                        hidden>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn me-auto" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Process</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{{ end }}
