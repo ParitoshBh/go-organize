@@ -1,0 +1,10 @@
+{
+    "connections": {
+        "s3": {
+            "endpoint": "",
+            "accessKey": "",
+            "secret": "",
+            "disableSSL": false
+        }
+    }
+}

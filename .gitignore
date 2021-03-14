@@ -1,2 +1,4 @@
 tmp/
+server.db
 debug.log
+config.json
