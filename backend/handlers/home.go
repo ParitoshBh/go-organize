@@ -36,6 +36,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	_logger := logger.Logger
 	sessionManager := utils.GetSessionManager()
 	s3Client := connections.GetS3Client()
+	baseBucket := connections.GetBaseBucket()
 
 	// ViewData variables for view vars
 	type ViewData struct {
@@ -48,15 +49,10 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		FlashMessage      string
 	}
 
-	baseBucket := "go-organizer"
 	queryPath := r.URL.Query().Get("path")
 	path := utils.GetCurrentPath(queryPath)
 
 	viewData := ViewData{}
-
-	// objectInfo, err := s3Client.StatObject(ctx, baseBucket, queryPath, minio.StatObjectOptions{})
-	// if err != nil {
-	// 	_logger.Warn(err.Error())
 
 	// use tkn from query param if paginating results
 	nextContinuationToken := r.URL.Query().Get("ntkn")
@@ -94,20 +90,6 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	viewData.FlashMessage = sessionManager.PopString(r.Context(), "FlashMessage")
 
 	templmanager.RenderTemplate(w, "home.html", viewData)
-	// } else {
-	// 	// requesting a resouce, don't render template
-	// 	if objectInfo.Err != nil {
-	// 		// TODO handle error
-	// 		_logger.Warn(objectInfo.Err.Error())
-	// 	}
-
-	// 	object, err := minioClient.GetObject(ctx, baseBucket, queryPath, minio.GetObjectOptions{})
-	// 	if err != nil {
-	// 		_logger.Error(err.Error())
-	// 	}
-
-	// 	http.ServeContent(w, r, "somename.svg", time.Now(), object)
-	// }
 }
 
 func listObjects(ctx context.Context, s3Client *s3.S3, nextContinuationToken string, previousContinuationToken string, baseBucket string, path string) ([]object, paginator, error) {
@@ -155,7 +137,7 @@ func listObjects(ctx context.Context, s3Client *s3.S3, nextContinuationToken str
 	for _, content := range output.Contents {
 		objects = append(objects, object{
 			Name: utils.BuildObjectName(*content.Key),
-			// Path: fmt.Sprintf("?path=%s", *content.Key),
+			Path: fmt.Sprintf("object/%s", *content.Key),
 			Size: humanize.Bytes(uint64(*content.Size)),
 		})
 		// 		viewObject.IsImage = isImage(mObject.Key)

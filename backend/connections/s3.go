@@ -12,6 +12,7 @@ import (
 )
 
 var s3Client *s3.S3
+var baseBucket string
 
 // BuildS3Connection builds and return connection to S3
 func BuildS3Connection() {
@@ -43,8 +44,13 @@ func BuildS3Connection() {
 	}
 
 	s3Client = s3.New(newSession)
+	baseBucket = s3Config.Get("bucket").String()
 }
 
 func GetS3Client() *s3.S3 {
 	return s3Client
+}
+
+func GetBaseBucket() string {
+	return baseBucket
 }

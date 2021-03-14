@@ -4,6 +4,7 @@
             "endpoint": "",
             "accessKey": "",
             "secret": "",
+            "bucket": "",
             "disableSSL": false
         }
     }
