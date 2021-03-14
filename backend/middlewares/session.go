@@ -9,5 +9,9 @@ import (
 func Session(next http.Handler) http.Handler {
 	sessionManager := utils.GetSessionManager()
 
+	// TODO
+	// add error handler if session table isn't available
+	// default behaviour is to throw internal server error
+
 	return sessionManager.LoadAndSave(next)
 }
