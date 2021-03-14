@@ -38,6 +38,9 @@
             <div class="container-xl">
                 {{template "_breadcrumb" .}}
 
+                <!-- Flash message -->
+                {{ template "_flashmessage" .}}
+
                 {{template "content" .}}
             </div>
         </div>
