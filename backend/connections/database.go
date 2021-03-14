@@ -29,6 +29,15 @@ func InitDatabaseConnection() {
 	// result := goOrmDB.Create(&user)
 	// _logger.Info(result)
 
+	// // create table for holding session data
+	// goOrmDB.Exec(`CREATE TABLE sessions (
+	// 	token TEXT PRIMARY KEY,
+	// 	data BLOB NOT NULL,
+	// 	expiry REAL NOT NULL
+	// )`)
+	// // add index on sessions table
+	// goOrmDB.Exec("CREATE INDEX sessions_expiry_idx ON sessions(expiry)")
+
 	sqlDB, err := goOrmDB.DB()
 	if err != nil {
 		_logger.Fatal(err.Error())
