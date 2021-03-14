@@ -15,6 +15,8 @@ uppy.use(Uppy.XHRUpload, {
     endpoint: '/object/create',
     formData: true,
     limit: 1,
+    // disable timeout till the time backend can update js of upload status
+    timeout: 0,
     getResponseError: function (responseText, response) {
         return new Error(JSON.parse(responseText).message);
     },
