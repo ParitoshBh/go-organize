@@ -5,11 +5,41 @@ import (
 	"go-organizer/backend/connections"
 	"go-organizer/backend/logger"
 	"go-organizer/backend/utils"
+	"io"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/gorilla/mux"
 )
+
+// GetObject return requested object
+func GetObject(w http.ResponseWriter, r *http.Request) {
+	s3Client := connections.GetS3Client()
+	baseBucket := connections.GetBaseBucket()
+	_logger := logger.Logger
+
+	routerVars := mux.Vars(r)
+	path := routerVars["path"]
+
+	output, err := s3Client.GetObjectWithContext(r.Context(), &s3.GetObjectInput{
+		Bucket: aws.String(baseBucket),
+		Key:    aws.String(path),
+	})
+	if err != nil {
+		_logger.Error(err.Error())
+	}
+
+	// update headers
+	w.Header().Add("Content-Length", fmt.Sprintf("%d", *output.ContentLength))
+	w.Header().Add("Content-Type", *output.ContentType)
+
+	_, err = io.Copy(w, output.Body)
+	if err != nil {
+		// TODO take user to error page and/or show flash message on homepage
+		_logger.Error(err.Error())
+	}
+}
 
 // CreateObject uploads a file to bucket or creates a new object
 func CreateObject(w http.ResponseWriter, r *http.Request) {
@@ -19,10 +49,9 @@ func CreateObject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionManager := utils.GetSessionManager()
-	_logger := logger.Logger
 	s3Client := connections.GetS3Client()
-
-	baseBucket := "go-organizer"
+	baseBucket := connections.GetBaseBucket()
+	_logger := logger.Logger
 
 	err := r.ParseForm()
 	if err != nil {
@@ -151,7 +180,7 @@ func objectExists(baseBucket string, filename string) bool {
 func DeleteObject(w http.ResponseWriter, r *http.Request) {
 	_logger := logger.Logger
 
-	baseBucket := "go-organizer"
+	baseBucket := connections.GetBaseBucket()
 	s3Client := connections.GetS3Client()
 
 	err := r.ParseForm()
