@@ -7,7 +7,8 @@ import (
 	"go-organizer/backend/utils"
 	"net/http"
 
-	"github.com/minio/minio-go/v7"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 )
 
 // CreateObject uploads a file to bucket or creates a new object
@@ -17,9 +18,9 @@ func CreateObject(w http.ResponseWriter, r *http.Request) {
 		Message string `json:"message"`
 	}
 
+	sessionManager := utils.GetSessionManager()
 	_logger := logger.Logger
-	minioClient := connections.MinioClient
-	ctx := connections.Context
+	s3Client := connections.GetS3Client()
 
 	baseBucket := "go-organizer"
 
@@ -47,71 +48,99 @@ func CreateObject(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// check if object with same name already exists
-		if isDuplicateObject(baseBucket, newBucketPath) {
-			// TODO Show flash message
+		if objectExists(baseBucket, newBucketPath) {
+			_logger.Error("Folder already exists")
+
+			sessionManager.Put(r.Context(), "FlashMessage", "Folder already exists")
+
 			http.Redirect(w, r, fmt.Sprintf("/?path=%s", bucketPath[:len(bucketPath)-1]), http.StatusSeeOther)
-		} else {
-			_logger.Infof("Creating new bucket -> %s", newBucketPath)
-			_, err = minioClient.PutObject(ctx, baseBucket, newBucketPath, nil, 0, minio.PutObjectOptions{})
-			if err != nil {
-				_logger.Warnf(err.Error())
-				// TODO show flash message with error
-			} else {
-				http.Redirect(w, r, fmt.Sprintf("/?path=%s", newBucketPath[:len(newBucketPath)-1]), http.StatusSeeOther)
-			}
+			return
 		}
-	} else {
-		_logger.Infof("Upload objects")
 
-		_logger.Info(formValues)
-		file, fileHeader, err := r.FormFile("files[]")
+		_logger.Infof("Creating new bucket -> %s", newBucketPath)
+		_, err := s3Client.PutObjectWithContext(r.Context(), &s3.PutObjectInput{
+			Bucket: aws.String(baseBucket),
+			Key:    aws.String(newBucketPath),
+		})
 		if err != nil {
-			_logger.Errorf(err.Error())
+			_logger.Error(err.Error())
+			sessionManager.Put(r.Context(), "FlashMessage", err.Error())
 		}
-		_logger.Info(fileHeader.Header)
-		_logger.Info(fileHeader.Size)
 
-		filename := ""
-		if bucketPath != "" {
-			filename = fmt.Sprintf("%s%s", bucketPath, fileHeader.Filename)
-		} else {
-			filename = fileHeader.Filename
-		}
-		_logger.Infof(filename)
+		http.Redirect(w, r, fmt.Sprintf("/?path=%s", newBucketPath[:len(newBucketPath)-1]), http.StatusSeeOther)
+		return
+	}
 
-		// check if object with same name already exists
-		if isDuplicateObject(baseBucket, filename) {
+	_logger.Infof("Upload objects")
+
+	_logger.Info(formValues)
+	file, fileHeader, err := r.FormFile("files[]")
+	if err != nil {
+		_logger.Errorf(err.Error())
+	}
+	_logger.Info(fileHeader.Header)
+	_logger.Info(fileHeader.Size)
+
+	filename := ""
+	if bucketPath != "" {
+		filename = fmt.Sprintf("%s%s", bucketPath, fileHeader.Filename)
+	} else {
+		filename = fileHeader.Filename
+	}
+	_logger.Infof(filename)
+
+	// check if object with same name already exists
+	if objectExists(baseBucket, filename) {
+		utils.SendJSONResponse(w, http.StatusOK, response{
+			Status:  false,
+			Message: "File already exists",
+		})
+	} else {
+		_, err := s3Client.PutObjectWithContext(r.Context(), &s3.PutObjectInput{
+			Bucket: aws.String(baseBucket),
+			Key:    aws.String(filename),
+			Body:   file,
+		})
+		if err != nil {
+			_logger.Error(err.Error())
 			utils.SendJSONResponse(w, http.StatusOK, response{
 				Status:  false,
-				Message: "File already exists",
+				Message: err.Error(),
 			})
 		} else {
-			uploadInfo, err := minioClient.PutObject(ctx, baseBucket, filename, file, fileHeader.Size, minio.PutObjectOptions{})
-			if err != nil {
-				_logger.Errorf(err.Error())
-				utils.SendJSONResponse(w, http.StatusOK, response{
-					Status:  false,
-					Message: err.Error(),
-				})
-			} else {
-				_logger.Info(uploadInfo)
-				utils.SendJSONResponse(w, http.StatusOK, response{
-					Status:  true,
-					Message: "",
-				})
-			}
+			_logger.Info("Uploaded")
+			utils.SendJSONResponse(w, http.StatusOK, response{
+				Status:  true,
+				Message: "",
+			})
 		}
 	}
 }
 
-func isDuplicateObject(baseBucket string, filename string) bool {
-	minioClient := connections.MinioClient
-	ctx := connections.Context
+func objectExists(baseBucket string, filename string) bool {
+	s3Client := connections.GetS3Client()
+	bucketHeadRes := true
 	_logger := logger.Logger
 
-	_, err := minioClient.StatObject(ctx, baseBucket, filename, minio.StatObjectOptions{})
+	_, err := s3Client.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(baseBucket),
+		Key:    aws.String(filename),
+	})
 	if err != nil {
-		_logger.Warnf(err.Error())
+		bucketHeadRes = false
+	}
+
+	output, err := s3Client.ListObjectsV2(&s3.ListObjectsV2Input{
+		Bucket:  aws.String(baseBucket),
+		Prefix:  aws.String(filename),
+		MaxKeys: aws.Int64(1),
+	})
+	if err != nil {
+		_logger.Error(err.Error())
+		return true
+	}
+
+	if !bucketHeadRes && *output.KeyCount == 0 {
 		return false
 	}
 
@@ -123,8 +152,7 @@ func DeleteObject(w http.ResponseWriter, r *http.Request) {
 	_logger := logger.Logger
 
 	baseBucket := "go-organizer"
-	minioClient := connections.MinioClient
-	ctx := connections.Context
+	s3Client := connections.GetS3Client()
 
 	err := r.ParseForm()
 	if err != nil {
@@ -142,16 +170,42 @@ func DeleteObject(w http.ResponseWriter, r *http.Request) {
 			prefix = fmt.Sprintf("%s%s", currentBucketPath, prefix)
 		}
 
-		objectsCh := minioClient.ListObjects(ctx, baseBucket, minio.ListObjectsOptions{
-			Prefix:    prefix,
-			Recursive: false,
+		err := s3Client.ListObjectsV2PagesWithContext(r.Context(), &s3.ListObjectsV2Input{
+			Bucket:  aws.String(baseBucket),
+			Prefix:  aws.String(prefix),
+			MaxKeys: aws.Int64(2),
+		}, func(lovo *s3.ListObjectsV2Output, b bool) bool {
+			deleteKeys := []*s3.ObjectIdentifier{}
+			for _, content := range lovo.Contents {
+				deleteKeys = append(deleteKeys, &s3.ObjectIdentifier{
+					Key: content.Key,
+				})
+			}
+
+			_, err = s3Client.DeleteObjectsWithContext(r.Context(), &s3.DeleteObjectsInput{
+				Bucket: aws.String(baseBucket),
+				Delete: &s3.Delete{
+					Objects: deleteKeys,
+				},
+			})
+			if err != nil {
+				_logger.Error(err.Error())
+				return false
+			}
+
+			return true
 		})
+		if err != nil {
+			_logger.Error(err.Error())
+			deleted = false
+		}
 
-		errorCh := minioClient.RemoveObjects(ctx, baseBucket, objectsCh, minio.RemoveObjectsOptions{})
-
-		// log errors received from RemoveObjects API
-		for e := range errorCh {
-			_logger.Errorf("Failed to remove " + e.ObjectName + ", error: " + e.Err.Error())
+		_, err = s3Client.DeleteObjectWithContext(r.Context(), &s3.DeleteObjectInput{
+			Bucket: aws.String(baseBucket),
+			Key:    aws.String(prefix),
+		})
+		if err != nil {
+			_logger.Error(err.Error())
 			deleted = false
 		}
 
@@ -167,7 +221,10 @@ func DeleteObject(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, utils.GetReponseRedirect(currentBucketPath), http.StatusSeeOther)
 		}
 	} else {
-		err = minioClient.RemoveObject(ctx, baseBucket, objectName, minio.RemoveObjectOptions{})
+		_, err := s3Client.DeleteObjectWithContext(r.Context(), &s3.DeleteObjectInput{
+			Bucket: aws.String(baseBucket),
+			Key:    aws.String(objectName),
+		})
 		if err != nil {
 			_logger.Errorf(err.Error())
 		}

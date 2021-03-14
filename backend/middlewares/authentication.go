@@ -22,11 +22,13 @@ func Authentication(next http.Handler) http.Handler {
 				// if already autherized, redirect to homepage
 				if sessionManager.GetBool(r.Context(), "isAuthorized") {
 					http.Redirect(w, r, "/", http.StatusSeeOther)
+					return
 				}
 			} else {
 				if !sessionManager.GetBool(r.Context(), "isAuthorized") {
 					_logger.Warn("Unauthorized request, redirecting to login page")
 					http.Redirect(w, r, "/login", http.StatusSeeOther)
+					return
 				}
 			}
 		}

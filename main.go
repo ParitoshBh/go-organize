@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"go-organizer/backend/connections"
 	"go-organizer/backend/handlers"
@@ -34,16 +33,8 @@ func main() {
 	// Load templates
 	templmanager.LoadTemplates()
 
-	// Build connection to S3
-	err := connections.GetS3Connection()
-	if err != nil {
-		_logger.Errorf(err.Error())
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	connections.Context = ctx
+	// Init connection to S3
+	connections.BuildS3Connection()
 
 	r := mux.NewRouter()
 
