@@ -45,6 +45,8 @@ func main() {
 	r.HandleFunc("/login", handlers.Login).Methods(http.MethodGet, http.MethodPost).Name("login")
 	r.HandleFunc("/logout", handlers.Logout).Methods(http.MethodGet).Name("logout")
 
+	r.HandleFunc("/user/update", handlers.Update).Methods(http.MethodPost)
+
 	r.HandleFunc("/object/{path:.*}", handlers.GetObject).Methods(http.MethodGet)
 	r.HandleFunc("/object/create", handlers.CreateObject).Methods(http.MethodPost)
 	r.HandleFunc("/object/delete", handlers.DeleteObject).Methods(http.MethodPost)

@@ -23,9 +23,17 @@ func InitDatabaseConnection() {
 	}
 
 	// Migrate the schema
-	goOrmDB.AutoMigrate(&models.User{})
+	goOrmDB.AutoMigrate(&models.User{}, &models.UserConfig{})
 
-	// user := models.User{Username: "paritosh", Password: "password", FirstName: "Paritosh", LastName: "Bhatia"}
+	// user := models.User{
+	// 	Username:  "paritosh",
+	// 	Password:  "password",
+	// 	FirstName: "Paritosh",
+	// 	LastName:  "Bhatia",
+	// 	UserConfig: models.UserConfig{
+	// 		LayoutStyle: 1,
+	// 	},
+	// }
 	// result := goOrmDB.Create(&user)
 	// _logger.Info(result)
 

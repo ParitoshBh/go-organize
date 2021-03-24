@@ -8,13 +8,14 @@ import (
 )
 
 type User struct {
-	ID        uint
-	Username  string
-	FirstName string
-	LastName  string
-	Password  string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID         uint
+	Username   string
+	FirstName  string
+	LastName   string
+	Password   string
+	UserConfig UserConfig
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 // BeforeSave : hook before a user is saved

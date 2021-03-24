@@ -22,18 +22,38 @@
         <!-- Page title actions -->
         {{ if not .IsObjectListEmpty }}
         <div class="col-auto ms-auto d-print-none">
-            <div class="col-auto">
-                <!-- <a href="#" class="btn btn-icon" aria-label="Button">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
-                        stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                        <rect x="4" y="4" width="6" height="6" rx="1" />
-                        <rect x="14" y="4" width="6" height="6" rx="1" />
-                        <rect x="4" y="14" width="6" height="6" rx="1" />
-                        <rect x="14" y="14" width="6" height="6" rx="1" />
-                    </svg>
-                </a> -->
+            <div class="d-flex">
+                <div class="me-3">
+                    <form action="/user/update" method="post">
+                        {{ if eq .User.UserConfig.LayoutStyle 1 }}
+                        <input type="text" name="layoutStyle" value="2" hidden>
+                        <button type="submit" class="btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <rect x="4" y="4" width="6" height="6" rx="1" />
+                                <rect x="14" y="4" width="6" height="6" rx="1" />
+                                <rect x="4" y="14" width="6" height="6" rx="1" />
+                                <rect x="14" y="14" width="6" height="6" rx="1" />
+                            </svg>
+                            Grid
+                        </button>
+                        {{ else }}
+                        <input type="text" name="layoutStyle" value="1" hidden>
+                        <button type="submit" class="btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24"
+                                viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                                <rect x="4" y="4" width="16" height="6" rx="2" />
+                                <rect x="4" y="14" width="16" height="6" rx="2" />
+                            </svg>
+                            List
+                        </button>
+                        {{ end }}
+                    </form>
+                </div>
                 <a class="btn" href="#" data-bs-toggle="modal" data-bs-target="#modal-team">
                     <svg xmlns="http://www.w3.org/2000/svg" class="icon" width="24" height="24" viewBox="0 0 24 24"
                         stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round"

@@ -1,0 +1,33 @@
+{{ define "grid_view" }}
+    {{ range $object := .ListingObject.Files }}
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-sm h-100">
+            {{ if $object.IsImage }}
+            <a href="#" class="d-block"><img height="250px" src="{{ $object.Path }}" class="card-img-top"></a>
+            {{ end }}
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <div>{{ $object.Name }}</div>
+                        <div class="text-muted">{{ $object.Size }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ end }}
+    <div class="hr-text">Folders</div>
+    {{ range $object := .ListingObject.Directories }}
+    <div class="col-sm-6 col-lg-4">
+        <div class="card card-sm card-stacked h-100">
+            <div class="card-body text-center">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <div>{{ $object.Name }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {{ end }}
+{{ end }}

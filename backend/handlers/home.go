@@ -9,19 +9,31 @@ import (
 	"go-organizer/backend/models"
 	"go-organizer/backend/templmanager"
 	"go-organizer/backend/utils"
+	"mime"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/dustin/go-humanize"
 )
 
-type object struct {
-	Name        string
-	Path        string
-	Size        string
-	IsDirectory bool
-	IsImage     bool
+type fileObject struct {
+	Name    string
+	Path    string
+	Size    string
+	IsImage bool
+}
+
+type directoryObject struct {
+	Name string
+	Path string
+}
+
+type listingObject struct {
+	Files       []fileObject
+	Directories []directoryObject
 }
 
 type paginator struct {
@@ -42,7 +54,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	type ViewData struct {
 		CurrentPath       string
 		IsObjectListEmpty bool
-		Objects           []object
+		ListingObject     listingObject
 		Pagination        paginator
 		Breadcrumbs       []utils.Breadcrumb
 		User              models.User
@@ -67,8 +79,8 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	viewData.Objects = objects
-	if len(viewData.Objects) == 0 {
+	viewData.ListingObject = objects
+	if len(viewData.ListingObject.Directories) == 0 && len(viewData.ListingObject.Files) == 0 {
 		viewData.IsObjectListEmpty = true
 	} else {
 		viewData.Pagination = pagination
@@ -92,15 +104,14 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	templmanager.RenderTemplate(w, "home.html", viewData)
 }
 
-func listObjects(ctx context.Context, s3Client *s3.S3, nextContinuationToken string, previousContinuationToken string, baseBucket string, path string) ([]object, paginator, error) {
+func listObjects(ctx context.Context, s3Client *s3.S3, nextContinuationToken string, previousContinuationToken string, baseBucket string, path string) (listingObject, paginator, error) {
 	var (
-		objects    []object
+		object     listingObject
 		pagination paginator
 	)
-	// _logger := logger.Logger
 
 	if !objectExists(baseBucket, path) {
-		return objects, pagination, errors.New("Folder doesn't exist")
+		return object, pagination, errors.New("folder doesn't exist")
 	}
 
 	// input params
@@ -118,7 +129,7 @@ func listObjects(ctx context.Context, s3Client *s3.S3, nextContinuationToken str
 
 	output, err := s3Client.ListObjectsV2(&params)
 	if err != nil {
-		return objects, pagination, err
+		return object, pagination, err
 	}
 
 	// loop through all sub-directories first
@@ -126,21 +137,20 @@ func listObjects(ctx context.Context, s3Client *s3.S3, nextContinuationToken str
 		name := *commonPrefix.Prefix
 		objectPath := name[0 : len(name)-1]
 
-		objects = append(objects, object{
-			Name:        utils.BuildObjectName(objectPath),
-			Path:        fmt.Sprintf("?path=%s", objectPath),
-			IsDirectory: true,
+		object.Directories = append(object.Directories, directoryObject{
+			Name: utils.BuildObjectName(objectPath),
+			Path: fmt.Sprintf("?path=%s", objectPath),
 		})
 	}
 
 	// loop through all files
 	for _, content := range output.Contents {
-		objects = append(objects, object{
-			Name: utils.BuildObjectName(*content.Key),
-			Path: fmt.Sprintf("object/%s", *content.Key),
-			Size: humanize.Bytes(uint64(*content.Size)),
+		object.Files = append(object.Files, fileObject{
+			Name:    utils.BuildObjectName(*content.Key),
+			Path:    fmt.Sprintf("object/%s", *content.Key),
+			Size:    humanize.Bytes(uint64(*content.Size)),
+			IsImage: isImage(*content.Key),
 		})
-		// 		viewObject.IsImage = isImage(mObject.Key)
 	}
 
 	pagination = paginator{}
@@ -164,7 +174,7 @@ func listObjects(ctx context.Context, s3Client *s3.S3, nextContinuationToken str
 		}
 	}
 
-	return objects, pagination, nil
+	return object, pagination, nil
 }
 
 func getUserData(ctx context.Context) (models.User, error) {
@@ -173,19 +183,26 @@ func getUserData(ctx context.Context) (models.User, error) {
 	user := models.User{}
 
 	if !sessionManager.Exists(ctx, "userId") {
-		return user, errors.New("Session has expired")
+		return user, errors.New("session has expired")
 	}
 
-	result := goOrmDB.Select([]string{"first_name", "last_name"}).First(&user, sessionManager.Get(ctx, "userId"))
+	// find user
+	result := goOrmDB.Select([]string{"id", "first_name", "last_name"}).First(&user, sessionManager.Get(ctx, "userId"))
 	if result.RowsAffected == 0 {
-		return user, errors.New("Unable to find user")
+		return user, errors.New("unable to find user")
+	}
+
+	// load user's config
+	err := goOrmDB.Model(&user).Association("UserConfig").Find(&user.UserConfig)
+	if err != nil {
+		return user, err
 	}
 
 	return user, nil
 }
 
-// func isImage(name string) bool {
-// 	extension := filepath.Ext(name)
+func isImage(name string) bool {
+	extension := filepath.Ext(name)
 
-// 	return strings.HasPrefix(mime.TypeByExtension(extension), "image/")
-// }
+	return strings.HasPrefix(mime.TypeByExtension(extension), "image/")
+}
